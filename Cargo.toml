@@ -14,3 +14,9 @@ sea-orm = { version = "0.12.15", features = [
     "macros",
 ] }
 sea-orm-cli = "0.12.15"
+serde = { version="*", features = ["derive"] }
+sha256 = "1.5.0"
+
+[dependencies.rocket_dyn_templates]
+version = "0.1.0-rc.2"
+features = ["tera"]

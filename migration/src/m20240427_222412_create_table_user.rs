@@ -18,9 +18,8 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(User::DisplayName).string().not_null())
-                    .col(ColumnDef::new(User::Email).string().not_null())
-                    .col(ColumnDef::new(User::Login).string().not_null())
+                    .col(ColumnDef::new(User::DisplayName).string().unique_key().not_null())
+                    .col(ColumnDef::new(User::Email).string().unique_key().not_null())
                     .col(ColumnDef::new(User::Password).string().not_null())
                     .col(ColumnDef::new(User::Avatar).binary().not_null())
                     .col(ColumnDef::new(User::SavedBooks).json().not_null())
@@ -42,7 +41,6 @@ pub enum User {
     Id,
     DisplayName,
     Email,
-    Login,
     Password,
     Avatar,
     SavedBooks
