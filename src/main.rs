@@ -8,6 +8,7 @@ mod routes;
 use routes::user_route;
 use routes::genre_route;
 use routes::author_route;
+use routes::book_route;
 
 mod entities;
 
@@ -31,4 +32,5 @@ async fn rocket() -> _ {
         .mount("/user", user_route::get_all_methods())
         .mount("/genre", genre_route::get_all_methods())
         .mount("/author", author_route::get_all_methods())
+        .mount("/book", book_route::get_all_methods())
 }
