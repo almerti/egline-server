@@ -20,8 +20,9 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Author::FirstName).string().not_null())
                     .col(ColumnDef::new(Author::LastName).string().not_null())
+                    .col(ColumnDef::new(Author::Biography).string().not_null())
                     .col(ColumnDef::new(Author::Rating).float().not_null())
-                    .col(ColumnDef::new(Author::Cover).binary().not_null())
+                    .col(ColumnDef::new(Author::Avatar).binary().not_null())
                     .to_owned(),
             )
             .await
@@ -40,6 +41,7 @@ pub enum Author {
     Id,
     FirstName,
     LastName,
+    Biography,
     Rating,
-    Cover
+    Avatar
 }

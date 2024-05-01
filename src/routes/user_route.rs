@@ -13,21 +13,21 @@ use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection,
 use sha256::digest;
 
 #[get("/")]
-pub async fn get_all_users(
+async fn get_all_users(
     db: &State<DatabaseConnection>
-) -> Result<Json<Vec<Model>>, status::Custom<Json<String>>> {
+) -> Result<Json<Vec<Model>>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
     let users = Entity::find().all(db).await;
 
     match users {
         Ok(result) => Ok(Json(result)),
-        Err(err) => Err(status::Custom(Status::InternalServerError, Json(err.to_string())))
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
 }
 
 #[get("/<id>")]
-pub async fn get_user_by_id(
+async fn get_user_by_id(
     db: &State<DatabaseConnection>,
     id: i32
 ) -> Result<Json<Model>, status::Custom<String>> {
@@ -52,10 +52,10 @@ pub async fn get_user_by_id(
 }
 
 #[post("/", data="<user_data>", format="json")]
-pub async fn create_user(
+async fn create_user(
     db: &State<DatabaseConnection>,
     user_data: Json<Model>,
-) -> Result<Json<String>, status::Custom<Json<String>>> {
+) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
     let hashed_password: String = digest(user_data.password.clone());
 
@@ -70,16 +70,16 @@ pub async fn create_user(
 
     match user {
         Ok(_) => Ok(Json(format!("User {} was successfully created", user_data.display_name.clone()))),
-        Err(err) => Err(status::Custom(Status::InternalServerError, Json(err.to_string())))
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
 }
 
 #[put("/<id>", data="<user_data>", format="json")]
-pub async fn update_user(
+async fn update_user(
     db: &State<DatabaseConnection>,
     user_data: Json<Model>,
     id: i32,
-) -> Result<Json<String>, status::Custom<Json<String>>> {
+) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
     let user = Entity::find_by_id(id).one(db).await.unwrap().unwrap();
 
@@ -101,15 +101,15 @@ pub async fn update_user(
 
     match updated_user {
         Ok(result) => Ok(Json(format!("User {} was successfully updated", result.display_name.clone()))),
-        Err(err) => Err(status::Custom(Status::InternalServerError, Json(err.to_string())))
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
 }
 
 #[delete("/<id>")]
-pub async fn delete_user(
+async fn delete_user(
     db: &State<DatabaseConnection>,
     id: i32
-) -> Result<Json<String>, status::Custom<Json<String>>> {
+) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
     let deleted_user = ActiveModel {
@@ -119,6 +119,10 @@ pub async fn delete_user(
 
     match deleted_user {
         Ok(result) => Ok(Json(format!("Number of deleted entries: {}", result.rows_affected))),
-        Err(err) => Err(status::Custom(Status::InternalServerError, Json(err.to_string())))
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
+}
+
+pub fn get_all_methods() -> Vec<rocket::Route> {
+    routes![get_all_users, get_user_by_id, create_user, update_user, delete_user]
 }
