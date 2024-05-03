@@ -11,7 +11,7 @@ pub struct Model {
     pub book_id: i32,
     pub title: String,
     pub filepath: String,
-    pub number: String,
+    pub number: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

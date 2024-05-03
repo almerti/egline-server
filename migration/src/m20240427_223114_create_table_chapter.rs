@@ -23,7 +23,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Chapter::BookId).integer().not_null())
                     .col(ColumnDef::new(Chapter::Title).string().not_null())
                     .col(ColumnDef::new(Chapter::Filepath).string().not_null())
-                    .col(ColumnDef::new(Chapter::Number).string().not_null())
+                    .col(ColumnDef::new(Chapter::Number).integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-chapter-book_id")
