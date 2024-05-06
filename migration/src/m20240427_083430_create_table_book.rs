@@ -22,6 +22,9 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Book::Description).string().not_null())
                     .col(ColumnDef::new(Book::Cover).binary().not_null())
                     .col(ColumnDef::new(Book::Rating).float().not_null())
+                    .col(ColumnDef::new(Book::Date).date().not_null())
+                    .col(ColumnDef::new(Book::Views).integer().not_null())
+                    .col(ColumnDef::new(Book::Status).string().not_null())
                     .to_owned(),
             )
             .await
@@ -41,5 +44,8 @@ pub enum Book {
     Title,
     Description,
     Cover,
-    Rating
+    Rating,
+    Date,
+    Views,
+    Status
 }

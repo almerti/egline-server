@@ -5,7 +5,7 @@ use rocket::http::Status;
 
 use rocket::State;
 
-use crate::entities::{book::Entity, book::Model, book::ActiveModel};
+use crate::entities::{book::Entity, book::Model, book::ActiveModel, genre, book_genre};
 
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
 
