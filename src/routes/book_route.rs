@@ -1,24 +1,72 @@
 use rocket::serde::json::Json;
 
+use serde::{Deserialize, Serialize};
+
 use rocket::response::status;
 use rocket::http::Status;
 
 use rocket::State;
 
-use crate::entities::{book::Entity, book::Model, book::ActiveModel, genre, book_genre};
+use crate::entities::{book::{ActiveModel, Entity, Model}, book_rate, genre};
+use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait, ModelTrait};
 
-use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
+#[derive(Debug, Serialize, Deserialize)]
+struct BookWithGenresAndRates {
+    pub id: i32,
+    pub title: String,
+    pub description: String,
+    pub cover: Vec<u8>,
+    pub rating: f32,
+    pub year: i32,
+    pub views: i32,
+    pub status: String,
+    pub genres: Vec<String>,
+    pub rates: usize
+}
 
 #[get("/")]
 async fn get_all_books(
     db: &State<DatabaseConnection>
-) -> Result<Json<Vec<Model>>, status::Custom<String>> {
+) -> Result<Json<Vec<BookWithGenresAndRates>>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
+    let mut books: Vec<BookWithGenresAndRates> = Vec::new();
 
-    let books = Entity::find().all(db).await;
+    let query = Entity::find().all(db).await;
 
-    match books {
-        Ok(result) => Ok(Json(result)),
+    match query {
+        Ok(result) => {
+            for result_book in result {
+                let genres = result_book.find_related(genre::Entity)
+                    .all(db)
+                    .await
+                    .unwrap()
+                    .iter()
+                    .map(|genre| genre.title.clone()).collect::<Vec<String>>();
+
+                let rates = result_book.find_related(book_rate::Entity)
+                    .all(db)
+                    .await
+                    .unwrap()
+                    .len();
+
+                let book = BookWithGenresAndRates {
+                    id: result_book.id,
+                    title: result_book.title.clone(),
+                    description: result_book.description.clone(),
+                    cover: result_book.cover.clone(),
+                    rating: result_book.rating,
+                    year: result_book.year,
+                    views: result_book.views,
+                    status: result_book.status.clone(),
+                    genres,
+                    rates
+                };
+
+                books.push(book);
+            };
+
+            return Ok(Json(books));
+        },
         Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
 }
@@ -27,22 +75,41 @@ async fn get_all_books(
 async fn get_book_by_id(
     db: &State<DatabaseConnection>,
     id: i32
-) -> Result<Json<Model>, status::Custom<String>> {
+) -> Result<Json<BookWithGenresAndRates>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let book = Entity::find_by_id(id).one(db).await;
+    let query = Entity::find_by_id(id).one(db).await;
 
-    match book {
-        Ok(Some(book)) => Ok(Json(book)),
-        Ok(None) => {
-            let empty_book = Model {
-                id: -1,
-                title: String::new(),
-                description: String::new(),
-                cover: Vec::new(),
-                rating: 0.0,
+    match query {
+        Ok(Some(model)) => {
+            let genres = model.find_related(genre::Entity)
+                .all(db)
+                .await
+                .unwrap()
+                .iter()
+                .map(|genre| genre.title.clone()).collect::<Vec<String>>();
+
+            let rates = model.find_related(book_rate::Entity)
+                .all(db)
+                .await
+                .unwrap()
+                .len();
+
+            let book = BookWithGenresAndRates {
+                id: model.id,
+                title: model.title.clone(),
+                description: model.description.clone(),
+                cover: model.cover.clone(),
+                rating: model.rating,
+                year: model.year,
+                views: model.views,
+                status: model.status.clone(),
+                genres,
+                rates
             };
-            Ok(Json(empty_book))
-        }
+
+            return Ok(Json(book));
+        },
+        Ok(None) => Err(status::Custom(Status::InternalServerError, "No such book".to_string())),
         Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
 }
@@ -59,6 +126,9 @@ async fn create_book(
         description: ActiveValue::set(book_data.description.clone()),
         cover: ActiveValue::set(book_data.cover.clone()),
         rating: ActiveValue::set(0.0),
+        year: ActiveValue::set(book_data.year),
+        views: ActiveValue::set(0),
+        status: ActiveValue::set(book_data.status.clone()),
         ..Default::default()
     }.insert(db).await;
 
@@ -82,6 +152,9 @@ async fn update_book(
         description: ActiveValue::set(book_data.description.clone()),
         cover: ActiveValue::set(book_data.cover.clone()),
         rating: ActiveValue::set(book_data.rating),
+        year: ActiveValue::set(book_data.year),
+        views: ActiveValue::set(0),
+        status: ActiveValue::set(book_data.status.clone()),
         ..Default::default()
     }.update(db).await;
 

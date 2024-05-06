@@ -12,6 +12,7 @@ pub struct Model {
     pub title: String,
     pub filepath: String,
     pub number: i32,
+    pub date: Date,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

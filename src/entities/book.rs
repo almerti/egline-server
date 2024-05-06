@@ -14,6 +14,9 @@ pub struct Model {
     pub cover: Vec<u8>,
     #[sea_orm(column_type = "Float")]
     pub rating: f32,
+    pub year: i32,
+    pub views: i32,
+    pub status: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
