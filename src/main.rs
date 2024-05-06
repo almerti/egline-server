@@ -19,10 +19,12 @@ use routes::comment_rate_route;
 mod entities;
 
 use sea_orm::DatabaseConnection;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 #[get("/")]
 fn main_page() -> &'static str {
-    "Hello!\nI am Eglien server..."
+    "Hello!\nI am Egline server..."
 }
 
 #[launch]
@@ -32,9 +34,29 @@ async fn rocket() -> _ {
         Err(err) => panic!("{}", err),
     };
 
+    #[derive(OpenApi)]
+    #[openapi(
+        info(description = "Egline API"),
+        paths(
+            user_route::get_all_users,
+            book_route::get_all_books
+        ),
+        components(
+            schemas(
+                entities::user::Model,
+                book_route::BookWithGenresAndRates
+            )
+        ),
+    )]
+    struct ApiDoc;
+
     rocket::build()
         .manage(db)
         .mount("/", routes![main_page])
+        .mount(
+            "/",
+            SwaggerUi::new("/swagger-ui/<_..>").url("/api-docs/openapi.json", ApiDoc::openapi()),
+        )
         .mount("/user", user_route::get_all_methods())
         .mount("/genre", genre_route::get_all_methods())
         .mount("/author", author_route::get_all_methods())

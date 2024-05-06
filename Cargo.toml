@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4.38"
-dotenv = "0.15.0"
 rocket = { version = "0.5.0", features = ["json"] }
 sea-orm = { version = "0.12.15", features = [
     "sqlx-postgres",
@@ -17,6 +16,8 @@ sea-orm = { version = "0.12.15", features = [
 sea-orm-cli = "0.12.15"
 serde = { version="*", features = ["derive"] }
 sha256 = "1.5.0"
+utoipa = { version="4.2.1", features = ["rocket_extras"] }
+utoipa-swagger-ui = { version="6", features = ["rocket"] }
 
 [dependencies.rocket_dyn_templates]
 version = "0.1.0-rc.2"

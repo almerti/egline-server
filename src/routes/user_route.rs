@@ -12,6 +12,14 @@ use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection,
 
 use sha256::digest;
 
+
+#[utoipa::path(
+    context_path = "/user",
+    responses(
+        (status = 200, description = "All users", body = Vec<Model>),
+        (status = 500, description = "No users", body = String)
+    ),
+)]
 #[get("/")]
 async fn get_all_users(
     db: &State<DatabaseConnection>

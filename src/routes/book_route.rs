@@ -6,12 +6,13 @@ use rocket::response::status;
 use rocket::http::Status;
 
 use rocket::State;
+use utoipa::ToSchema;
 
 use crate::entities::{book::{ActiveModel, Entity, Model}, book_rate, genre};
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait, ModelTrait};
 
-#[derive(Debug, Serialize, Deserialize)]
-struct BookWithGenresAndRates {
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct BookWithGenresAndRates {
     pub id: i32,
     pub title: String,
     pub description: String,
@@ -24,6 +25,13 @@ struct BookWithGenresAndRates {
     pub rates: usize
 }
 
+#[utoipa::path(
+    context_path = "/book",
+    responses(
+        (status = 200, description = "All books", body = Vec<BookWithGenresAndRates>),
+        (status = 500, description = "No books", body = String)
+    ),
+)]
 #[get("/")]
 async fn get_all_books(
     db: &State<DatabaseConnection>
