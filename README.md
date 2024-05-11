@@ -10,6 +10,14 @@ To run the server successfully, you will need a database. We used PostgreSQL, al
 
 To set up a PostgreSQL database for your server, you can either create a local database or use a Docker container. Using a Docker container is recommended, especially with an Alpine Linux-based image, as it's lightweight and efficient.
 
+If you decide to use a Docker container, you first need to install [Docker itself](https://www.docker.com/get-started/). After that, according to your OS (Windows os Linux based), run database initialization script from root directory.
+
+#### Windows
+```db_init.bat```
+
+#### Linux
+```./db_init.sh```
+
 ### Server
 
 To set up and run your project using SeaORM, follow these steps:
