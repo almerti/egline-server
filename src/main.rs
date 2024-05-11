@@ -2,6 +2,7 @@
 extern crate rocket;
 
 mod setup;
+use rocket::response::content::RawHtml;
 use setup::set_up_db;
 
 mod routes;
@@ -23,8 +24,8 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 #[get("/")]
-fn main_page() -> &'static str {
-    "Hello!\nI am Egline server..."
+pub fn index() -> RawHtml<&'static str> {
+    RawHtml("Hello!\nI am Egline server...\n<a href=\"swagger-ui/\">swagger</a>")
 }
 
 #[launch]
@@ -45,10 +46,10 @@ async fn rocket() -> _ {
     rocket
         ::build()
         .manage(db)
-        .mount("/", routes![main_page])
+        .mount("/", routes![index])
         .mount(
             "/",
-            SwaggerUi::new("/swagger-ui/<_..>").url("/api-docs/openapi.json", ApiDoc::openapi()),
+            SwaggerUi::new("/swagger-ui/<_..>").url("/api-docs/openapi.json", ApiDoc::openapi())
         )
         .mount("/user", user_route::get_all_methods())
         .mount("/genre", genre_route::get_all_methods())

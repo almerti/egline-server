@@ -1,31 +1,64 @@
 # [Egline](https://github.com/almerti/Egline) server
 
+## Overview
+
 This is a server application developed using Rust, leveraging the [Rocket web framework](https://rocket.rs/) and [SeaORM](https://www.sea-ql.org/SeaORM/) for database operations, specifically with [PostgreSQL](https://www.postgresql.org/). 
 
-## How to start?
+## Prerequisites
 
-To run the server successfully, you will need a database. We used PostgreSQL, although you can use MySQL or SQLite (as required by SeaORM).
+- Rust: Ensure you have Rust installed on your system. You can download it from the official Rust website.
+- PostgreSQL: The Egline server uses PostgreSQL as the database. You can either set up a local PostgreSQL instance or use a Docker container.
 
-### Database
+## Database Setup
 
-To set up a PostgreSQL database for your server, you can either create a local database or use a Docker container. Using a Docker container is recommended, especially with an Alpine Linux-based image, as it's lightweight and efficient.
+### Using Docker (Recommended)
 
-If you decide to use a Docker container, you first need to install [Docker itself](https://www.docker.com/get-started/). After that, according to your OS (Windows os Linux based), run database initialization script from root directory.
+1. Install [Docker](https://www.docker.com/get-started/) on your system.
+1. From the root directory of the project, run the appropriate script to initialize the database:
+ - Windows: db_init.bat
+ - Linux: ./db_init.sh
 
-#### Windows
-```db_init.bat```
+This script will create a Docker container with a PostgreSQL database and apply the necessary migrations.
 
-#### Linux
-```./db_init.sh```
 
-### Server
+### Manual Setup
 
-To set up and run your project using SeaORM, follow these steps:
+1. Install PostgreSQL on your system.
+2. Create a new database for the Egline server.
+3. Update the DATABASE_URL variable in the .env file to match your database connection details.
+    
+
+## Running the Server
+
 1. Clone or download the project repository to your local machine.
-2. Open the .env file in the root of your project and update the DATABASE_URL variable to match your database connection details. The format should be protocol://username:password@host/database. Make same changes in setup file.
-3. In the root directory of your project, execute the command to apply all pending migrations and create the necessary tables in your database: ```sea-orm-cli migrate up```
-4. If you've made changes to the migration files, you need to regenerate the entity files. Run ```sea-orm-cli generate entities -o src/entities --with-serde both``` to update the entity files in the src/entities directory. This step is crucial for ensuring that your entity definitions match the current state of your database schema.
-5. After generating the entities, review and update any route methods in the src/routes folder to reflect any changes in your entity definitions or business logic.
-6. Finally, start your application by running ```cargo run``` in the terminal from the root directory of your project. This command compiles and runs your Rust application, making it accessible via the configured port.
+2. Open the .env file in the root of your project and update the DATABASE_URL variable to match your database connection details. The format should be protocol://username:password@host/database.
+3. In the root directory of your project, apply all pending migrations and create the necessary tables in your database: ```sea-orm-cli migrate up```
+4. Start your application by running: ```cargo run```
+This command compiles and runs your Rust application, making it accessible via the configured port.
+5. If you've made changes to the migration files, regenerate the entity files:```sea-orm-cli generate entities -o src/entities --with-serde both```
+This step is crucial for ensuring that your entity definitions match the current state of your database schema.
+6. Review and update any route methods in the src/routes folder to reflect any changes in your entity definitions or business logic.
 
-Remember, the sea-orm-cli tool is essential for managing database migrations and generating entity files. Ensure it's installed by running ```cargo install sea-orm-cli``` if you haven't already.
+The order has been updated to first run the server, then regenerate the entity files and update the route methods if needed. This ensures the server is up and running before making any changes to the codebase.
+
+> [!NOTE]
+> Remember, the sea-orm-cli tool is essential for managing database migrations and generating entity files. Ensure it's installed by running ```cargo install sea-orm-cli``` if you haven't already.
+
+## Dependencies
+The Egline server uses the following dependencies:
+
+- [Rocket](https://rocket.rs/) - A web framework for Rust
+- [SeaORM](https://www.sea-ql.org/SeaORM/) - An asynchronous database ORM for Rust
+
+## Contributing
+If you would like to contribute to the Egline server, please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix.
+3. Make your changes and commit them with descriptive commit messages.
+4. Push your changes to your forked repository.
+5. Submit a pull request to the main repository.
+
+## License
+Egline server is released under the [GNU GPL](LICENSE).
+
