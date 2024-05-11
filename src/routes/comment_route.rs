@@ -4,7 +4,8 @@ use rocket::response::status;
 use rocket::http::Status;
 use rocket::State;
 
-use crate::entities::{chapter, comment::{ActiveModel, Entity, Model}};
+use crate::entities::prelude::{Comment, Chapter};
+use crate::entities::comment::{ActiveModel, Model};
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
 
 #[get("/")]
@@ -13,7 +14,7 @@ async fn get_all_comments(
 ) -> Result<Json<Vec<Model>>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
-    let comments = Entity::find().all(db).await;
+    let comments = Comment::find().all(db).await;
 
     match comments {
         Ok(result) => Ok(Json(result)),
@@ -27,7 +28,7 @@ async fn get_comment_by_id(
     id: i32
 ) -> Result<Json<Model>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let comment = Entity::find_by_id(id).one(db).await;
+    let comment = Comment::find_by_id(id).one(db).await;
 
     match comment {
         Ok(Some(comment)) => Ok(Json(comment)),
@@ -53,7 +54,7 @@ async fn create_comment(
     comment_data: Json<Model>,
 ) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let chapter = chapter::Entity::find_by_id(comment_data.chapter_id).one(db).await.unwrap().unwrap();
+    let chapter = Chapter::find_by_id(comment_data.chapter_id).one(db).await.unwrap().unwrap();
     
     if chapter.book_id != comment_data.book_id {
         return Err(status::Custom(Status::InternalServerError, format!("Saving comment error: chapter book_id is not equal comment book_id")))
@@ -83,7 +84,7 @@ async fn update_comment(
 ) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
-    let chapter = chapter::Entity::find_by_id(comment_data.chapter_id).one(db).await.unwrap().unwrap();
+    let chapter = Chapter::find_by_id(comment_data.chapter_id).one(db).await.unwrap().unwrap();
     
     if chapter.book_id != comment_data.book_id {
         return Err(status::Custom(

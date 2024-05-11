@@ -37,20 +37,13 @@ async fn rocket() -> _ {
     #[derive(OpenApi)]
     #[openapi(
         info(description = "Egline API"),
-        paths(
-            user_route::get_all_users,
-            book_route::get_all_books
-        ),
-        components(
-            schemas(
-                entities::user::Model,
-                book_route::BookWithGenresAndRates
-            )
-        ),
+        paths(user_route::get_all_users, book_route::get_all_books),
+        components(schemas(entities::user::Model, book_route::BookWithGenresAndRates)),
     )]
     struct ApiDoc;
 
-    rocket::build()
+    rocket
+        ::build()
         .manage(db)
         .mount("/", routes![main_page])
         .mount(

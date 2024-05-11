@@ -5,7 +5,8 @@ use rocket::http::Status;
 
 use rocket::State;
 
-use crate::entities::{author::Entity, author::Model, author::ActiveModel};
+use crate::entities::{author::Model, author::ActiveModel};
+use crate::entities::prelude::Author;
 
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
 
@@ -15,7 +16,7 @@ async fn get_all_authors(
 ) -> Result<Json<Vec<Model>>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
-    let authors = Entity::find().all(db).await;
+    let authors = Author::find().all(db).await;
 
     match authors {
         Ok(result) => Ok(Json(result)),
@@ -29,7 +30,7 @@ async fn get_author_by_id(
     id: i32
 ) -> Result<Json<Model>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let author = Entity::find_by_id(id).one(db).await;
+    let author = Author::find_by_id(id).one(db).await;
 
     match author {
         Ok(Some(author)) => Ok(Json(author)),

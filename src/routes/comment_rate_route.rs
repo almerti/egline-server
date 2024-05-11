@@ -4,7 +4,8 @@ use rocket::State;
 use rocket::response::status;
 use rocket::http::Status;
 
-use crate::entities::comment_rate::{Entity, Model, ActiveModel};
+use crate::entities::prelude::CommentRate;
+use crate::entities::comment_rate::{Model, ActiveModel};
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
 
 #[get("/")]
@@ -13,7 +14,7 @@ async fn get_all_comment_rates(
 ) -> Result<Json<Vec<Model>>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
-    let comment_rates = Entity::find().all(db).await;
+    let comment_rates = CommentRate::find().all(db).await;
 
     match comment_rates {
         Ok(result) => Ok(Json(result)),

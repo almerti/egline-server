@@ -4,7 +4,8 @@ use rocket::State;
 use rocket::response::status;
 use rocket::http::Status;
 
-use crate::entities::book_genre::{Entity, Model, ActiveModel};
+use crate::entities::prelude::BookGenre;
+use crate::entities::book_genre::{Model, ActiveModel};
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
 
 #[get("/")]
@@ -13,7 +14,7 @@ async fn get_all_book_genres(
 ) -> Result<Json<Vec<Model>>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
-    let book_genres = Entity::find().all(db).await;
+    let book_genres = BookGenre::find().all(db).await;
 
     match book_genres {
         Ok(result) => Ok(Json(result)),

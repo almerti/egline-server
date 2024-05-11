@@ -6,7 +6,8 @@ use rocket::http::Status;
 
 use rocket::State;
 
-use crate::entities::{user::Entity, user::Model, user::ActiveModel};
+use crate::entities::{user::Model, user::ActiveModel};
+use crate::entities::prelude::User;
 
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
 
@@ -26,7 +27,7 @@ async fn get_all_users(
 ) -> Result<Json<Vec<Model>>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
-    let users = Entity::find().all(db).await;
+    let users = User::find().all(db).await;
 
     match users {
         Ok(result) => Ok(Json(result)),
@@ -40,7 +41,7 @@ async fn get_user_by_id(
     id: i32
 ) -> Result<Json<Model>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let user = Entity::find_by_id(id).one(db).await;
+    let user = User::find_by_id(id).one(db).await;
 
     match user {
         Ok(Some(user)) => Ok(Json(user)),
@@ -89,7 +90,7 @@ async fn update_user(
     id: i32,
 ) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let user = Entity::find_by_id(id).one(db).await.unwrap().unwrap();
+    let user = User::find_by_id(id).one(db).await.unwrap().unwrap();
 
     let hashed_password = if user_data.password.is_empty() {
         user.password

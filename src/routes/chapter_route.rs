@@ -5,7 +5,8 @@ use rocket::State;
 use rocket::response::status;
 use rocket::http::Status;
 
-use crate::entities::chapter::{self, ActiveModel, Entity, Model};
+use crate::entities::prelude::Chapter;
+use crate::entities::chapter::{ActiveModel, Model, Column};
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 
 #[get("/")]
@@ -14,7 +15,7 @@ async fn get_all_chapters(
 ) -> Result<Json<Vec<Model>>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
-    let chapters = Entity::find().all(db).await;
+    let chapters = Chapter::find().all(db).await;
 
     match chapters {
         Ok(result) => Ok(Json(result)),
@@ -28,7 +29,7 @@ async fn get_chapter_by_id(
     id: i32
 ) -> Result<Json<Model>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let chapter = Entity::find_by_id(id).one(db).await;
+    let chapter = Chapter::find_by_id(id).one(db).await;
     let null_date = NaiveDate::from_ymd_opt(0, 1, 1).unwrap();
 
     match chapter {
@@ -54,9 +55,9 @@ async fn create_chapter(
     chapter_data: Json<Model>,
 ) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let is_chapter_exists = Entity::find()
-        .filter(chapter::Column::BookId.eq(chapter_data.book_id))
-        .filter(chapter::Column::Number.eq(chapter_data.number))
+    let is_chapter_exists = Chapter::find()
+        .filter(Column::BookId.eq(chapter_data.book_id))
+        .filter(Column::Number.eq(chapter_data.number))
         .one(db)
         .await;
 
@@ -66,10 +67,12 @@ async fn create_chapter(
             format!("Book {} has chapter with number {}", chapter.book_id, chapter.number)
         )),
         Ok(None) => {
+            let filepath = format!("/{}/{}/", chapter_data.book_id, chapter_data.number);
+
             let chapter:Result<Model, DbErr> = ActiveModel {
                 book_id: ActiveValue::set(chapter_data.book_id.clone()),
                 title: ActiveValue::set(chapter_data.title.clone()),
-                filepath: ActiveValue::set(chapter_data.filepath.clone()),
+                filepath: ActiveValue::set(filepath),
                 number: ActiveValue::set(chapter_data.number.clone()),
                 date: ActiveValue::set(chapter_data.date),
                 ..Default::default()
@@ -91,9 +94,9 @@ async fn update_chapter(
     id: i32,
 ) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let is_chapter_exists = Entity::find()
-        .filter(chapter::Column::BookId.eq(chapter_data.book_id))
-        .filter(chapter::Column::Number.eq(chapter_data.number))
+    let is_chapter_exists = Chapter::find()
+        .filter(Column::BookId.eq(chapter_data.book_id))
+        .filter(Column::Number.eq(chapter_data.number))
         .one(db)
         .await;
 

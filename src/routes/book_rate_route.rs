@@ -4,7 +4,8 @@ use rocket::State;
 use rocket::response::status;
 use rocket::http::Status;
 
-use crate::entities::book_rate::{Entity, Model, ActiveModel};
+use crate::entities::prelude::BookRate;
+use crate::entities::book_rate::{Model, ActiveModel};
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
 
 #[get("/")]
@@ -13,7 +14,7 @@ async fn get_all_book_rates(
 ) -> Result<Json<Vec<Model>>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
-    let book_rates = Entity::find().all(db).await;
+    let book_rates = BookRate::find().all(db).await;
 
     match book_rates {
         Ok(result) => Ok(Json(result)),

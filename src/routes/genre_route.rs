@@ -5,7 +5,8 @@ use rocket::http::Status;
 
 use rocket::State;
 
-use crate::entities::{genre::Entity, genre::Model, genre::ActiveModel};
+use crate::entities::prelude::Genre;
+use crate::entities::{genre::Model, genre::ActiveModel};
 
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
 
@@ -15,7 +16,7 @@ async fn get_all_genres(
 ) -> Result<Json<Vec<Model>>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
-    let genres = Entity::find().all(db).await;
+    let genres = Genre::find().all(db).await;
 
     match genres {
         Ok(result) => Ok(Json(result)),
@@ -29,7 +30,7 @@ async fn get_genre_by_id(
     id: i32
 ) -> Result<Json<Model>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let genre = Entity::find_by_id(id).one(db).await;
+    let genre = Genre::find_by_id(id).one(db).await;
 
     match genre {
         Ok(Some(genre)) => Ok(Json(genre)),

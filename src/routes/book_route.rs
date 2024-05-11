@@ -8,7 +8,8 @@ use rocket::http::Status;
 use rocket::State;
 use utoipa::ToSchema;
 
-use crate::entities::{book::{ActiveModel, Entity, Model}, book_rate, genre};
+use crate::entities::prelude::{Book, BookRate, Genre};
+use crate::entities::book::{ActiveModel, Model};
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait, ModelTrait};
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -39,19 +40,19 @@ async fn get_all_books(
     let db: &DatabaseConnection = db as &DatabaseConnection;
     let mut books: Vec<BookWithGenresAndRates> = Vec::new();
 
-    let query = Entity::find().all(db).await;
+    let query = Book::find().all(db).await;
 
     match query {
         Ok(result) => {
             for result_book in result {
-                let genres = result_book.find_related(genre::Entity)
+                let genres = result_book.find_related(Genre)
                     .all(db)
                     .await
                     .unwrap()
                     .iter()
                     .map(|genre| genre.title.clone()).collect::<Vec<String>>();
 
-                let rates = result_book.find_related(book_rate::Entity)
+                let rates = result_book.find_related(BookRate)
                     .all(db)
                     .await
                     .unwrap()
@@ -85,18 +86,18 @@ async fn get_book_by_id(
     id: i32
 ) -> Result<Json<BookWithGenresAndRates>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let query = Entity::find_by_id(id).one(db).await;
+    let query = Book::find_by_id(id).one(db).await;
 
     match query {
         Ok(Some(model)) => {
-            let genres = model.find_related(genre::Entity)
+            let genres = model.find_related(Genre)
                 .all(db)
                 .await
                 .unwrap()
                 .iter()
                 .map(|genre| genre.title.clone()).collect::<Vec<String>>();
 
-            let rates = model.find_related(book_rate::Entity)
+            let rates = model.find_related(BookRate)
                 .all(db)
                 .await
                 .unwrap()
