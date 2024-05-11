@@ -6,7 +6,7 @@ This is a server application developed using Rust, leveraging the [Rocket web fr
 
 ## Prerequisites
 
-- Rust: Ensure you have Rust installed on your system. You can download it from the official Rust website.
+- Rust: Ensure you have Rust installed on your system. You can download it from the official [Rust website](https://www.rust-lang.org/tools/install).
 - PostgreSQL: The Egline server uses PostgreSQL as the database. You can either set up a local PostgreSQL instance or use a Docker container.
 
 ## Database Setup
@@ -14,7 +14,7 @@ This is a server application developed using Rust, leveraging the [Rocket web fr
 ### Using Docker (Recommended)
 
 1. Install [Docker](https://www.docker.com/get-started/) on your system.
-1. From the root directory of the project, run the appropriate script to initialize the database:
+2. From the root directory of the project, run the appropriate script to initialize the database:
  - Windows: db_init.bat
  - Linux: ./db_init.sh
 
