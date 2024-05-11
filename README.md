@@ -18,15 +18,13 @@ This is a server application developed using Rust, leveraging the [Rocket web fr
  - Windows: db_init.bat
  - Linux: ./db_init.sh
 
-This script will create a Docker container with a PostgreSQL database and apply the necessary migrations.
-
+This script will create a Docker container with a PostgreSQL database.
 
 ### Manual Setup
 
 1. Install PostgreSQL on your system.
 2. Create a new database for the Egline server.
-3. Update the DATABASE_URL variable in the .env file to match your database connection details.
-    
+3. Update the DATABASE_URL variable in the .env file to match your database connection details.    
 
 ## Running the Server
 
