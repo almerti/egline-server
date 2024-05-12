@@ -3,9 +3,12 @@ use rocket::response::status;
 
 use rocket::http::Status;
 use rocket::State;
+use sea_orm::{ColumnTrait, QueryFilter};
 
 use crate::entities::prelude::{Comment, Chapter};
 use crate::entities::comment::{ActiveModel, Model};
+use crate::entities::chapter;
+
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
 
 #[get("/")]
@@ -54,10 +57,17 @@ async fn create_comment(
     comment_data: Json<Model>,
 ) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let chapter = Chapter::find_by_id(comment_data.chapter_id).one(db).await.unwrap().unwrap();
+    let chapter = Chapter::find_by_id(comment_data.chapter_id)
+        .filter(chapter::Column::BookId.eq(comment_data.book_id))
+        .all(db)
+        .await
+        .unwrap();
     
-    if chapter.book_id != comment_data.book_id {
-        return Err(status::Custom(Status::InternalServerError, format!("Saving comment error: chapter book_id is not equal comment book_id")))
+    if chapter.is_empty() {
+        return Err(status::Custom(
+            Status::InternalServerError,
+            format!("No such chapter with id {} and book_id {}", comment_data.chapter_id, comment_data.book_id)
+        ));
     }
     
     let comment:Result<Model, DbErr> = ActiveModel {
@@ -84,13 +94,17 @@ async fn update_comment(
 ) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
-    let chapter = Chapter::find_by_id(comment_data.chapter_id).one(db).await.unwrap().unwrap();
+    let chapter = Chapter::find_by_id(comment_data.chapter_id)
+        .filter(chapter::Column::BookId.eq(comment_data.book_id))
+        .all(db)
+        .await
+        .unwrap();
     
-    if chapter.book_id != comment_data.book_id {
+    if chapter.is_empty() {
         return Err(status::Custom(
             Status::InternalServerError,
-            "Updating comment error: chapter book_id is not equal comment book_id".to_string()
-        ))
+            format!("No such chapter with id {} and book_id {}", comment_data.chapter_id, comment_data.book_id)
+        ));
     }
 
     let updated_comment = ActiveModel {
