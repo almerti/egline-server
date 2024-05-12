@@ -23,6 +23,20 @@ async fn get_all_chapters(
     }
 }
 
+#[get("/book-chapters/<id>")]
+async fn get_book_chapters(
+    db: &State<DatabaseConnection>,
+    id: i32
+) -> Result<Json<Vec<Model>>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+    let chapters = Chapter::find().filter(Column::BookId.eq(id)).all(db).await;
+
+    match chapters {
+        Ok(result) => Ok(Json(result)),
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
+
 #[get("/<id>")]
 async fn get_chapter_by_id(
     db: &State<DatabaseConnection>,
@@ -144,5 +158,5 @@ async fn delete_chapter(
 }
 
 pub fn get_all_chapter_methods() -> Vec<rocket::Route> {
-    routes![get_all_chapters, get_chapter_by_id, create_chapter, update_chapter, delete_chapter]
+    routes![get_all_chapters, get_chapter_by_id, create_chapter, update_chapter, delete_chapter, get_book_chapters]
 }

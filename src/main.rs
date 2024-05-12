@@ -25,7 +25,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 #[get("/")]
 pub fn index() -> RawHtml<&'static str> {
-    RawHtml("Hello!\nI am Egline server...\n<a href=\"swagger-ui/\">swagger</a>")
+    RawHtml("Hello!\nI am Egline server...\n<a href='swagger-ui/'>swagger</a>")
 }
 
 #[launch]
@@ -51,14 +51,14 @@ async fn rocket() -> _ {
             "/",
             SwaggerUi::new("/swagger-ui/<_..>").url("/api-docs/openapi.json", ApiDoc::openapi())
         )
-        .mount("/user", user_route::get_all_methods())
-        .mount("/genre", genre_route::get_all_methods())
-        .mount("/author", author_route::get_all_methods())
-        .mount("/book", book_route::get_all_methods())
-        .mount("/chapter", chapter_route::get_all_chapter_methods())
-        .mount("/comment", comment_route::get_all_comment_methods())
-        .mount("/book-genre", book_genre_route::get_all_book_genre_methods())
-        .mount("/book-author", book_author_route::get_all_book_author_methods())
-        .mount("/book-rate", book_rate_route::get_all_book_rate_methods())
-        .mount("/comment-rate", comment_rate_route::get_all_comment_rate_methods())
+        .mount("/api/v1/user", user_route::get_all_methods())
+        .mount("/api/v1/genre", genre_route::get_all_methods())
+        .mount("/api/v1/author", author_route::get_all_methods())
+        .mount("/api/v1/book", book_route::get_all_methods())
+        .mount("/api/v1/chapter", chapter_route::get_all_chapter_methods())
+        .mount("/api/v1/comment", comment_route::get_all_comment_methods())
+        .mount("/api/v1/book-genre", book_genre_route::get_all_book_genre_methods())
+        .mount("/api/v1/book-author", book_author_route::get_all_book_author_methods())
+        .mount("/api/v1/book-rate", book_rate_route::get_all_book_rate_methods())
+        .mount("/api/v1/comment-rate", comment_rate_route::get_all_comment_rate_methods())
 }
