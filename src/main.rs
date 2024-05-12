@@ -12,9 +12,6 @@ use routes::author_route;
 use routes::book_route;
 use routes::chapter_route;
 use routes::comment_route;
-use routes::book_genre_route;
-use routes::book_author_route;
-use routes::book_rate_route;
 use routes::comment_rate_route;
 
 mod entities;
@@ -57,8 +54,5 @@ async fn rocket() -> _ {
         .mount("/api/v1/book", book_route::get_all_methods())
         .mount("/api/v1/chapter", chapter_route::get_all_chapter_methods())
         .mount("/api/v1/comment", comment_route::get_all_comment_methods())
-        .mount("/api/v1/book-genre", book_genre_route::get_all_book_genre_methods())
-        .mount("/api/v1/book-author", book_author_route::get_all_book_author_methods())
-        .mount("/api/v1/book-rate", book_rate_route::get_all_book_rate_methods())
         .mount("/api/v1/comment-rate", comment_rate_route::get_all_comment_rate_methods())
 }

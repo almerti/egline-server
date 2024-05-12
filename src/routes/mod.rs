@@ -4,7 +4,4 @@ pub mod author_route;
 pub mod book_route;
 pub mod chapter_route;
 pub mod comment_route;
-pub mod book_genre_route;
-pub mod book_author_route;
-pub mod book_rate_route;
 pub mod comment_rate_route;

@@ -10,6 +10,8 @@ use utoipa::ToSchema;
 
 use crate::entities::prelude::{Book, BookRate, Genre};
 use crate::entities::book::{ActiveModel, Model};
+use crate::entities::{book_author, book_genre, book_rate};
+
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait, ModelTrait};
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -191,6 +193,143 @@ async fn delete_book(
     }
 }
 
+#[post("/genre", data="<book_genre_data>", format="json")]
+pub async fn add_genre_to_book(
+    db: &State<DatabaseConnection>,
+    book_genre_data: Json<book_genre::Model>
+) -> Result<Json<String>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    let book_genre = book_genre::ActiveModel {
+        book_id: ActiveValue::set(book_genre_data.book_id.clone()),
+        genre_id: ActiveValue::set(book_genre_data.genre_id.clone()),
+        ..Default::default()
+    }.insert(db).await;
+
+    match book_genre {
+        Ok(_) => Ok(Json(format!("Book genre was successfully created"))),
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
+
+#[delete("/genre/<book_id>/<genre_id>")]
+pub async fn delete_genre_from_book(
+    db: &State<DatabaseConnection>,
+    book_id: i32,
+    genre_id: i32,
+) -> Result<Json<String>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    let book_genre = book_genre::ActiveModel {
+        book_id: ActiveValue::set(book_id.clone()),
+        genre_id: ActiveValue::set(genre_id.clone()),
+        ..Default::default()
+    }.delete(db).await;
+
+    match book_genre {
+        Ok(result) => Ok(Json(format!("Number of deleted entries: {}", result.rows_affected))),
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
+
+#[post("/author", data="<book_author_data>", format="json")]
+pub async fn add_author_to_book(
+    db: &State<DatabaseConnection>,
+    book_author_data: Json<book_author::Model>
+) -> Result<Json<String>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    let book_author = book_author::ActiveModel {
+        book_id: ActiveValue::set(book_author_data.book_id.clone()),
+        author_id: ActiveValue::set(book_author_data.author_id.clone()),
+        ..Default::default()
+    }.insert(db).await;
+
+    match book_author {
+        Ok(_) => Ok(Json(format!("Book author was successfully created"))),
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
+
+#[delete("/author/<book_id>/<author_id>")]
+pub async fn delete_author_from_book(
+    db: &State<DatabaseConnection>,
+    book_id: i32,
+    author_id: i32,
+) -> Result<Json<String>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    let book_author = book_author::ActiveModel {
+        book_id: ActiveValue::set(book_id.clone()),
+        author_id: ActiveValue::set(author_id.clone()),
+        ..Default::default()
+    }.delete(db).await;
+
+    match book_author {
+        Ok(result) => Ok(Json(format!("Number of deleted entries: {}", result.rows_affected))),
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
+
+#[post("/rate", data="<book_rate_data>", format="json")]
+pub async fn add_rate_to_book(
+    db: &State<DatabaseConnection>,
+    book_rate_data: Json<book_rate::Model>
+) -> Result<Json<String>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    if book_rate_data.rate < 1 || book_rate_data.rate > 5 {
+        return Err(status::Custom(
+            Status::InternalServerError,
+            "Saving rate error: Invalid rate value".to_string()
+        ))
+    }
+
+    let book_rate = book_rate::ActiveModel {
+        book_id: ActiveValue::set(book_rate_data.book_id.clone()),
+        user_id: ActiveValue::set(book_rate_data.user_id.clone()),
+        rate: ActiveValue::set(book_rate_data.rate.clone()),
+        ..Default::default()
+    }.insert(db).await;
+
+    match book_rate {
+        Ok(_) => Ok(Json(format!("Book rate was successfully created"))),
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
+
+#[delete("/rate/<book_id>/<user_id>")]
+pub async fn delete_rate_from_book(
+    db: &State<DatabaseConnection>,
+    book_id: i32,
+    user_id: i32,
+) -> Result<Json<String>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    let book_rate = book_rate::ActiveModel {
+        book_id: ActiveValue::set(book_id.clone()),
+        user_id: ActiveValue::set(user_id.clone()),
+        ..Default::default()
+    }.delete(db).await;
+
+    match book_rate {
+        Ok(result) => Ok(Json(format!("Number of deleted entries: {}", result.rows_affected))),
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
+
 pub fn get_all_methods() -> Vec<rocket::Route> {
-    routes![get_all_books, get_book_by_id, create_book, update_book, delete_book]
+    routes![
+        get_all_books,
+        get_book_by_id,
+        create_book,
+        update_book,
+        delete_book,
+        add_genre_to_book,
+        delete_genre_from_book,
+        add_author_to_book,
+        delete_author_from_book,
+        add_rate_to_book,
+        delete_rate_from_book
+    ]
 }
