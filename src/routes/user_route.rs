@@ -1,6 +1,8 @@
 use rocket::serde::json::{Json, serde_json};
 use serde::{Deserialize, Serialize};
+
 use serde_json::json;
+use json_value_remove::Remove;
 
 use rocket::response::status;
 use rocket::http::Status;
@@ -185,7 +187,148 @@ async fn add_book_to_tab(
     }
 }
 
+#[delete("/delete-book", data="<save_book_data>", format="json")]
+async fn delete_book_from_tab(
+    db: &State<DatabaseConnection>,
+    save_book_data: Json<SaveBook>,
+) -> Result<Json<String>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    let user = User::find_by_id(save_book_data.user_id).all(db).await.unwrap();
+    let book = Book::find_by_id(save_book_data.book_id).all(db).await.unwrap();
+
+    if user.len() == 0 {
+        return Err(status::Custom(Status::InternalServerError, format!("No user with id {}", save_book_data.user_id)))
+    }
+
+    if book.len() == 0 {
+        return Err(status::Custom(Status::InternalServerError, format!("No book with id {}", save_book_data.book_id)))
+    }
+
+    let tab_name = save_book_data.tab_name.clone();
+
+    let mut saved_books = user[0].saved_books.clone();
+    let tab_array = saved_books[tab_name.clone()].as_array_mut();
+
+    match tab_array {
+        Some(result) => {
+            if result.contains(&json!(save_book_data.book_id)) {
+                let index = result.iter().position(|x| *x == json!(save_book_data.book_id)).unwrap();
+                result.remove(index);
+            }
+        }
+        None => {
+            return Err(status::Custom(
+                Status::InternalServerError,
+                format!("User with {} id does not have tab {}", save_book_data.user_id, save_book_data.tab_name)
+            ));
+        }
+    }
+    
+    let updated_user = ActiveModel {
+        id: ActiveValue::set(save_book_data.user_id),
+        saved_books: ActiveValue::set(saved_books),
+        ..Default::default()
+    }.update(db).await;
+
+    match updated_user {
+        Ok(_) => Ok(Json(format!("Tab {} was updated", tab_name.clone()))),
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
+
+#[post("/tab/<user_id>/<tab_name>")]
+async fn add_tab_to_user(
+    db: &State<DatabaseConnection>,
+    user_id: i32,
+    tab_name: String
+) -> Result<Json<String>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    let user = User::find_by_id(user_id.clone()).all(db).await.unwrap();
+
+    if user.len() == 0 {
+        return Err(status::Custom(Status::InternalServerError, format!("No user with id {}", user_id)))
+    }
+
+    let mut saved_books = user[0].saved_books.clone();
+    let tab_array = saved_books[tab_name.clone()].as_array_mut();
+
+    match tab_array {
+        Some(_) => {
+            return Err(status::Custom(
+                Status::InternalServerError,
+                format!("User with {} id already has {} tab", user_id, tab_name)
+            ));
+        }
+        None => {
+            saved_books[tab_name.clone()] = json!([]);
+        }
+    }
+
+    let updated_user = ActiveModel {
+        id: ActiveValue::set(user_id),
+        saved_books: ActiveValue::set(saved_books),
+        ..Default::default()
+    }.update(db).await;
+
+    match updated_user {
+        Ok(_) => Ok(Json(format!("Tab {} was successfully added to user with {} id", tab_name.clone(), user_id.clone()))),
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
+
+#[delete("/tab/<user_id>/<tab_name>")]
+async fn delete_user_tab(
+    db: &State<DatabaseConnection>,
+    user_id: i32,
+    tab_name: String
+) -> Result<Json<String>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    let user = User::find_by_id(user_id.clone()).all(db).await.unwrap();
+
+    if user.len() == 0 {
+        return Err(status::Custom(Status::InternalServerError, format!("No user with id {}", user_id)))
+    }
+
+    let mut saved_books = user[0].saved_books.clone();
+    let tab_array = saved_books[tab_name.clone()].as_array_mut();
+
+    match tab_array {
+        Some(_) => {
+            let _ = saved_books.remove(format!("/{}", tab_name.clone()).as_str());
+        }
+        None => {
+            return Err(status::Custom(
+                Status::InternalServerError,
+                format!("User with id {} doesn't have {} tab", user_id, tab_name)
+            ));
+        }
+    }
+
+    let updated_user = ActiveModel {
+        id: ActiveValue::set(user_id),
+        saved_books: ActiveValue::set(saved_books),
+        ..Default::default()
+    }.update(db).await;
+
+    match updated_user {
+        Ok(_) => Ok(Json(format!("Tab {} was successfully added to user with {} id", tab_name.clone(), user_id.clone()))),
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
 
 pub fn get_all_methods() -> Vec<rocket::Route> {
-    routes![get_all_users, get_user_by_id, create_user, update_user, delete_user, add_book_to_tab]
+    routes![
+        get_all_users,
+        get_user_by_id,
+        create_user,
+        update_user,
+        delete_user,
+        add_tab_to_user,
+        delete_user_tab,
+        add_book_to_tab,
+        delete_book_from_tab,
+    ]
 }
