@@ -1,5 +1,6 @@
 use rocket::serde::json::Json;
 
+use sea_orm::{ColumnTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
 use rocket::response::status;
@@ -293,7 +294,76 @@ pub async fn add_rate_to_book(
     }.insert(db).await;
 
     match book_rate {
-        Ok(_) => Ok(Json(format!("Book rate was successfully created"))),
+        Ok(result) => {
+            let book_rates = BookRate::find()
+                .filter(book_rate::Column::BookId.eq(result.book_id))
+                .all(db)
+                .await
+                .unwrap()
+                .iter()
+                .map(|rate| rate.rate.clone()).collect::<Vec<i32>>();
+
+            let new_rating = book_rates.iter().sum::<i32>() as f32 / book_rates.len() as f32;
+
+            let upated_book = ActiveModel {
+                id: ActiveValue::set(result.book_id),
+                rating: ActiveValue::set(new_rating),
+                ..Default::default()
+            }.update(db).await;
+
+            match upated_book {
+                Ok(_) => Ok(Json(format!("Book rate was successfully created"))),
+                Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+            }
+        },
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
+
+#[put("/rate", data="<book_rate_data>", format="json")]
+pub async fn update_rate_to_book(
+    db: &State<DatabaseConnection>,
+    book_rate_data: Json<book_rate::Model>
+) -> Result<Json<String>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    if book_rate_data.rate < 1 || book_rate_data.rate > 5 {
+        return Err(status::Custom(
+            Status::InternalServerError,
+            "Saving rate error: Invalid rate value".to_string()
+        ))
+    }
+
+    let book_rate = book_rate::ActiveModel {
+        book_id: ActiveValue::set(book_rate_data.book_id.clone()),
+        user_id: ActiveValue::set(book_rate_data.user_id.clone()),
+        rate: ActiveValue::set(book_rate_data.rate.clone()),
+        ..Default::default()
+    }.update(db).await;
+
+    match book_rate {
+        Ok(result) => {
+            let book_rates = BookRate::find()
+                .filter(book_rate::Column::BookId.eq(result.book_id))
+                .all(db)
+                .await
+                .unwrap()
+                .iter()
+                .map(|rate| rate.rate.clone()).collect::<Vec<i32>>();
+
+            let new_rating = book_rates.iter().sum::<i32>() as f32 / book_rates.len() as f32;
+
+            let upated_book = ActiveModel {
+                id: ActiveValue::set(result.book_id),
+                rating: ActiveValue::set(new_rating),
+                ..Default::default()
+            }.update(db).await;
+
+            match upated_book {
+                Ok(_) => Ok(Json(format!("Book rate was successfully created"))),
+                Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+            }
+        },
         Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
 }
@@ -313,7 +383,28 @@ pub async fn delete_rate_from_book(
     }.delete(db).await;
 
     match book_rate {
-        Ok(result) => Ok(Json(format!("Number of deleted entries: {}", result.rows_affected))),
+        Ok(_) => {
+            let book_rates = BookRate::find()
+                .filter(book_rate::Column::BookId.eq(book_id))
+                .all(db)
+                .await
+                .unwrap()
+                .iter()
+                .map(|rate| rate.rate.clone()).collect::<Vec<i32>>();
+
+            let new_rating = book_rates.iter().sum::<i32>() as f32 / book_rates.len() as f32;
+
+            let upated_book = ActiveModel {
+                id: ActiveValue::set(book_id),
+                rating: ActiveValue::set(new_rating),
+                ..Default::default()
+            }.update(db).await;
+
+            match upated_book {
+                Ok(_) => Ok(Json(format!("Book rate was successfully deleted"))),
+                Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+            }
+        },
         Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
 }
@@ -330,6 +421,7 @@ pub fn get_all_methods() -> Vec<rocket::Route> {
         add_author_to_book,
         delete_author_from_book,
         add_rate_to_book,
+        update_rate_to_book,
         delete_rate_from_book
     ]
 }
