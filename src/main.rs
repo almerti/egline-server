@@ -36,7 +36,7 @@ async fn rocket() -> _ {
     #[openapi(
         info(description = "Egline API"),
         paths(user_route::get_all_users, book_route::get_all_books),
-        components(schemas(entities::user::Model, book_route::BookWithGenresAndRates)),
+        components(schemas(entities::user::Model, book_route::BookWithGenresAndRates))
     )]
     struct ApiDoc;
 
