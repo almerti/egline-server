@@ -1,4 +1,5 @@
 use rocket::serde::json::{Json, serde_json};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use rocket::response::status;
@@ -7,12 +8,11 @@ use rocket::http::Status;
 use rocket::State;
 
 use crate::entities::{user::Model, user::ActiveModel};
-use crate::entities::prelude::User;
+use crate::entities::prelude::{User, Book};
 
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
 
 use sha256::digest;
-
 
 #[utoipa::path(
     context_path = "/user",
@@ -132,6 +132,60 @@ async fn delete_user(
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct SaveBook {
+    user_id: i32,
+    book_id: i32,
+    tab_name: String
+}
+
+#[post("/save-book", data="<save_book_data>", format="json")]
+async fn add_book_to_tab(
+    db: &State<DatabaseConnection>,
+    save_book_data: Json<SaveBook>,
+) -> Result<Json<String>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    let user = User::find_by_id(save_book_data.user_id).all(db).await.unwrap();
+    let book = Book::find_by_id(save_book_data.book_id).all(db).await.unwrap();
+
+    if user.len() == 0 {
+        return Err(status::Custom(Status::InternalServerError, format!("No user with id {}", save_book_data.user_id)))
+    }
+
+    if book.len() == 0 {
+        return Err(status::Custom(Status::InternalServerError, format!("No book with id {}", save_book_data.book_id)))
+    }
+
+    let tab_name = save_book_data.tab_name.clone();
+
+    let mut saved_books = user[0].saved_books.clone();
+    let tab_array = saved_books[tab_name.clone()].as_array_mut();
+
+    match tab_array {
+        Some(result) => {
+            if !result.contains(&json!(save_book_data.book_id)) {
+                result.push(json!(save_book_data.book_id))
+            }
+        }
+        None => {
+            saved_books[tab_name.clone()] = json!([save_book_data.book_id])
+        }
+    }
+    
+    let updated_user = ActiveModel {
+        id: ActiveValue::set(save_book_data.user_id),
+        saved_books: ActiveValue::set(saved_books),
+        ..Default::default()
+    }.update(db).await;
+
+    match updated_user {
+        Ok(_) => Ok(Json(format!("Tab {} was updated", tab_name.clone()))),
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
+
+
 pub fn get_all_methods() -> Vec<rocket::Route> {
-    routes![get_all_users, get_user_by_id, create_user, update_user, delete_user]
+    routes![get_all_users, get_user_by_id, create_user, update_user, delete_user, add_book_to_tab]
 }
