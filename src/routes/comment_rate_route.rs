@@ -4,9 +4,9 @@ use rocket::State;
 use rocket::response::status;
 use rocket::http::Status;
 
-use crate::entities::prelude::CommentRate;
-use crate::entities::comment_rate::{Model, ActiveModel};
-use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
+use crate::entities::{comment, prelude::CommentRate};
+use crate::entities::comment_rate::{Model, ActiveModel, Column};
+use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter};
 
 #[get("/")]
 async fn get_all_comment_rates(
@@ -29,7 +29,7 @@ async fn create_comment_rate(
 ) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
-    if comment_rate_data.rate != -1 || comment_rate_data.rate != 1 {
+    if comment_rate_data.rate != -1 && comment_rate_data.rate != 1 {
         return Err(status::Custom(
             Status::InternalServerError,
             "Saving rate error: Invalid rate value".to_string()
@@ -44,7 +44,33 @@ async fn create_comment_rate(
     }.insert(db).await;
 
     match comment_rate {
-        Ok(_) => Ok(Json(format!("Comment rate was successfully created"))),
+        Ok(_) => {
+            let upvotes = CommentRate::find()
+                .filter(Column::CommentId.eq(comment_rate_data.comment_id))
+                .filter(Column::Rate.eq(1))
+                .all(db)
+                .await
+                .unwrap();
+
+            let downvotes = CommentRate::find()
+                .filter(Column::CommentId.eq(comment_rate_data.comment_id))
+                .filter(Column::Rate.eq(-1))
+                .all(db)
+                .await
+                .unwrap();
+
+            let updated_comment = comment::ActiveModel {
+                id: ActiveValue::set(comment_rate_data.comment_id),
+                upvotes: ActiveValue::set(upvotes.len() as i32),
+                downvotes: ActiveValue::set(downvotes.len() as i32),
+                ..Default::default()
+            }.update(db).await;
+
+            match updated_comment {
+                Ok(_) => Ok(Json(format!("Comment rate was successfully created"))),
+                Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+            }
+        },
         Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
 }
@@ -56,7 +82,7 @@ async fn update_comment_rate(
 ) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
 
-    if comment_rate_data.rate < 1 || comment_rate_data.rate > 5 {
+    if comment_rate_data.rate != 1 && comment_rate_data.rate != -1 {
         return Err(status::Custom(
             Status::InternalServerError,
             "Saving rate error: Invalid rate value".to_string()
@@ -71,7 +97,33 @@ async fn update_comment_rate(
     }.update(db).await;
 
     match comment_rate {
-        Ok(_) => Ok(Json(format!("Comment rate was successfully updated"))),
+        Ok(_) => {
+            let upvotes = CommentRate::find()
+                .filter(Column::CommentId.eq(comment_rate_data.comment_id))
+                .filter(Column::Rate.eq(1))
+                .all(db)
+                .await
+                .unwrap();
+
+            let downvotes = CommentRate::find()
+                .filter(Column::CommentId.eq(comment_rate_data.comment_id))
+                .filter(Column::Rate.eq(-1))
+                .all(db)
+                .await
+                .unwrap();
+
+            let updated_comment = comment::ActiveModel {
+                id: ActiveValue::set(comment_rate_data.comment_id),
+                upvotes: ActiveValue::set(upvotes.len() as i32),
+                downvotes: ActiveValue::set(downvotes.len() as i32),
+                ..Default::default()
+            }.update(db).await;
+
+            match updated_comment {
+                Ok(_) => Ok(Json(format!("Comment rate was successfully updated"))),
+                Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+            }
+        },
         Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
 }
@@ -91,7 +143,33 @@ async fn delete_comment_rate(
     }.delete(db).await;
 
     match deleted_comment_rate {
-        Ok(result) => Ok(Json(format!("Number of deleted entries: {}", result.rows_affected))),
+        Ok(_) => {
+            let upvotes = CommentRate::find()
+                .filter(Column::CommentId.eq(comment_id))
+                .filter(Column::Rate.eq(1))
+                .all(db)
+                .await
+                .unwrap();
+
+            let downvotes = CommentRate::find()
+                .filter(Column::CommentId.eq(comment_id))
+                .filter(Column::Rate.eq(-1))
+                .all(db)
+                .await
+                .unwrap();
+
+            let updated_comment = comment::ActiveModel {
+                id: ActiveValue::set(comment_id),
+                upvotes: ActiveValue::set(upvotes.len() as i32),
+                downvotes: ActiveValue::set(downvotes.len() as i32),
+                ..Default::default()
+            }.update(db).await;
+
+            match updated_comment {
+                Ok(_) => Ok(Json(format!("Comment rate was successfully deleted"))),
+                Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+            }
+        },
         Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
 }
