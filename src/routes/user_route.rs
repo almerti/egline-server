@@ -9,12 +9,27 @@ use rocket::http::Status;
 
 use rocket::State;
 
-use crate::entities::{user::Model, user::ActiveModel};
+use crate::entities::user::{Model, ActiveModel, Column};
 use crate::entities::prelude::{User, Book};
 
-use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait};
+use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter};
 
 use sha256::digest;
+
+#[derive(Debug, Serialize, Deserialize)]
+struct UserAuthModel {
+    email: String,
+    password: String
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct UserWithoutPassword {
+    id: i32,
+    email: String,
+    display_name: String,
+    avatar: Vec<u8>,
+    saved_books: serde_json::Value,
+}
 
 #[utoipa::path(
     context_path = "/user",
@@ -319,6 +334,37 @@ async fn delete_user_tab(
     }
 }
 
+#[get("/login", data = "<user_auth_data>", format = "json")]
+async fn login_user(
+    db: &State<DatabaseConnection>,
+    user_auth_data: Json<UserAuthModel>
+) -> Result<Json<UserWithoutPassword>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+    let hashed_password = digest(user_auth_data.password.clone());
+
+    let user = User::find()
+        .filter(Column::Email.eq(user_auth_data.email.clone()))
+        .filter(Column::Password.eq(hashed_password))
+        .one(db)
+        .await;
+
+    match user {
+        Ok(Some(result)) => {
+            let user_wo_password = UserWithoutPassword {
+                id: result.id,
+                email: result.email,
+                display_name: result.display_name,
+                avatar: result.avatar,
+                saved_books: result.saved_books
+            };
+
+            Ok(Json(user_wo_password))
+        },
+        Ok(None) => Err(status::Custom(Status::BadRequest, format!("Email or passwrod are not valid"))),
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+}
+
 pub fn get_all_methods() -> Vec<rocket::Route> {
     routes![
         get_all_users,
@@ -330,5 +376,6 @@ pub fn get_all_methods() -> Vec<rocket::Route> {
         delete_user_tab,
         add_book_to_tab,
         delete_book_from_tab,
+        login_user
     ]
 }
