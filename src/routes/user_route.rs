@@ -334,7 +334,7 @@ async fn delete_user_tab(
     }
 }
 
-#[get("/login", data = "<user_auth_data>", format = "json")]
+#[post("/login", data = "<user_auth_data>", format = "json")]
 async fn login_user(
     db: &State<DatabaseConnection>,
     user_auth_data: Json<UserAuthModel>
