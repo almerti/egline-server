@@ -75,8 +75,8 @@ async fn create_comment(
         user_id: ActiveValue::set(comment_data.user_id.clone()),
         chapter_id: ActiveValue::set(comment_data.chapter_id.clone()),
         text: ActiveValue::set(comment_data.text.clone()),
-        upvotes: ActiveValue::set(comment_data.upvotes.clone()),
-        downvotes: ActiveValue::set(comment_data.downvotes.clone()),
+        upvotes: ActiveValue::set(0),
+        downvotes: ActiveValue::set(0),
         ..Default::default()
     }.insert(db).await;
 
@@ -109,12 +109,7 @@ async fn update_comment(
 
     let updated_comment = ActiveModel {
         id: ActiveValue::set(id),
-        book_id: ActiveValue::set(comment_data.book_id.clone()),
-        user_id: ActiveValue::set(comment_data.user_id.clone()),
-        chapter_id: ActiveValue::set(comment_data.chapter_id.clone()),
         text: ActiveValue::set(comment_data.text.clone()),
-        upvotes: ActiveValue::set(comment_data.upvotes.clone()),
-        downvotes: ActiveValue::set(comment_data.downvotes.clone()),
         ..Default::default()
     }.update(db).await;
 
