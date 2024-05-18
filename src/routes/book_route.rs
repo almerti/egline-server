@@ -1,6 +1,10 @@
+use std::fs::File;
+use std::io::Read;
+use rocket::tokio::fs;
+
 use rocket::serde::json::Json;
 
-use sea_orm::{ColumnTrait, QueryFilter};
+use sea_orm::{ColumnTrait, QueryFilter, QueryOrder};
 use serde::{Deserialize, Serialize};
 
 use rocket::response::status;
@@ -10,7 +14,7 @@ use rocket::State;
 use utoipa::ToSchema;
 
 use crate::entities::prelude::{Book, BookRate, Genre};
-use crate::entities::book::{ActiveModel, Model};
+use crate::entities::book::{ActiveModel, Model, Column};
 use crate::entities::{book_author, book_genre, book_rate};
 
 use sea_orm::{prelude::DbErr, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait, ModelTrait};
@@ -61,11 +65,17 @@ async fn get_all_books(
                     .unwrap()
                     .len();
 
+                let filepath = format!("storage/{}/cover.png", result_book.id);
+                let mut file = File::options().read(true).open(filepath.clone()).expect("Can not open file");
+                let metadata = fs::metadata(filepath.clone()).await.expect("Can not read metadata");
+                let mut buf = vec![0; metadata.len() as usize];
+                let _ = file.read(&mut buf).expect("Buffer overflow");
+
                 let book = BookWithGenresAndRates {
                     id: result_book.id,
                     title: result_book.title.clone(),
                     description: result_book.description.clone(),
-                    cover: result_book.cover.clone(),
+                    cover: buf,
                     rating: result_book.rating,
                     year: result_book.year,
                     views: result_book.views,
@@ -106,11 +116,17 @@ async fn get_book_by_id(
                 .unwrap()
                 .len();
 
+            let filepath = format!("storage/{}/cover.png", model.id);
+            let mut file = File::options().read(true).open(filepath.clone()).expect("Can not open file");
+            let metadata = fs::metadata(filepath.clone()).await.expect("Can not read metadata");
+            let mut buf = vec![0; metadata.len() as usize];
+            let _ = file.read(&mut buf).expect("Buffer overflow");
+
             let book = BookWithGenresAndRates {
                 id: model.id,
                 title: model.title.clone(),
                 description: model.description.clone(),
-                cover: model.cover.clone(),
+                cover: buf,
                 rating: model.rating,
                 year: model.year,
                 views: model.views,
@@ -192,6 +208,18 @@ async fn delete_book(
         Ok(result) => Ok(Json(format!("Number of deleted entries: {}", result.rows_affected))),
         Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
+}
+
+#[get("/get-ids")]
+async fn get_ids(
+    db: &State<DatabaseConnection>
+) -> Result<Json<Vec<i32>>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    let books = Book::find().order_by_asc(Column::Rating).all(db).await.expect("Error");
+    let ids = books.iter().map(|book| book.id).collect::<Vec<i32>>();
+
+    Ok(Json(ids))
 }
 
 #[post("/genre", data="<book_genre_data>", format="json")]
@@ -422,6 +450,7 @@ pub fn get_all_methods() -> Vec<rocket::Route> {
         delete_author_from_book,
         add_rate_to_book,
         update_rate_to_book,
-        delete_rate_from_book
+        delete_rate_from_book,
+        get_ids
     ]
 }
