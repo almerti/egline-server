@@ -65,17 +65,11 @@ async fn get_all_books(
                     .unwrap()
                     .len();
 
-                let filepath = format!("storage/{}/cover.png", result_book.id);
-                let mut file = File::options().read(true).open(filepath.clone()).expect("Can not open file");
-                let metadata = fs::metadata(filepath.clone()).await.expect("Can not read metadata");
-                let mut buf = vec![0; metadata.len() as usize];
-                let _ = file.read(&mut buf).expect("Buffer overflow");
-
-                let book = BookWithGenresAndRates {
+                let mut book = BookWithGenresAndRates {
                     id: result_book.id,
                     title: result_book.title.clone(),
                     description: result_book.description.clone(),
-                    cover: buf,
+                    cover: Vec::new(),
                     rating: result_book.rating,
                     year: result_book.year,
                     views: result_book.views,
@@ -83,6 +77,23 @@ async fn get_all_books(
                     genres,
                     rates
                 };
+
+                let filepath = format!("storage/{}/cover.png", result_book.id);
+                let file = File::options().read(true).open(filepath.clone());
+
+                match file {
+                    Ok(mut res) => {
+                        let metadata = fs::metadata(filepath.clone()).await.expect("Can not read metadata");
+                        let mut buf = vec![0; metadata.len() as usize];
+                        let _ = res.read(&mut buf).expect("Buffer overflow");
+
+                        book.cover = buf;
+                    }
+                    Err(_) => {
+                        book.cover = Vec::new();
+                    }
+                };
+                
 
                 books.push(book);
             };
@@ -115,24 +126,34 @@ async fn get_book_by_id(
                 .await
                 .unwrap()
                 .len();
-
-            let filepath = format!("storage/{}/cover.png", model.id);
-            let mut file = File::options().read(true).open(filepath.clone()).expect("Can not open file");
-            let metadata = fs::metadata(filepath.clone()).await.expect("Can not read metadata");
-            let mut buf = vec![0; metadata.len() as usize];
-            let _ = file.read(&mut buf).expect("Buffer overflow");
-
-            let book = BookWithGenresAndRates {
+            
+            let mut book = BookWithGenresAndRates {
                 id: model.id,
                 title: model.title.clone(),
                 description: model.description.clone(),
-                cover: buf,
+                cover: Vec::new(),
                 rating: model.rating,
                 year: model.year,
                 views: model.views,
                 status: model.status.clone(),
                 genres,
                 rates
+            };
+
+            let filepath = format!("storage/{}/cover.png", model.id);
+            let file = File::options().read(true).open(filepath.clone());
+            
+            match file {
+                Ok(mut res) => {
+                    let metadata = fs::metadata(filepath.clone()).await.expect("Can not read metadata");
+                    let mut buf = vec![0; metadata.len() as usize];
+                    let _ = res.read(&mut buf).expect("Buffer overflow");
+
+                    book.cover = buf;
+                }
+                Err(_) => {
+                    book.cover = Vec::new();
+                }
             };
 
             return Ok(Json(book));
