@@ -28,7 +28,7 @@ struct UserEditModel {
     display_name: String,
     password: String,
     new_password: String,
-    avatar: Vec<u8>
+    avatar: Vec<i8>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -116,7 +116,7 @@ async fn update_user(
     id: i32,
 ) -> Result<Json<Model>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
-    let user = User::find_by_id(id).one(db).await.unwrap().unwrap();
+    let user = User::find_by_id(id).one(db).await.unwrap().expect(format!("No such user with id {}", id).as_str());
 
     let hashed_password = if user_data.password.is_empty() {
         user.password
@@ -129,7 +129,13 @@ async fn update_user(
         display_name: ActiveValue::set(user_data.display_name.clone()),
         email: ActiveValue::set(user_data.email.clone().to_lowercase()),
         password: ActiveValue::set(hashed_password),
-        avatar: ActiveValue::set(user_data.avatar.clone()),
+        avatar: ActiveValue::set(
+            if user_data.avatar.clone().len() == 0 {
+                user.avatar.clone()
+            } else {
+                user_data.avatar.clone()
+            }
+        ),
         saved_books: ActiveValue::set(json!(user_data.saved_books.clone())),
         ..Default::default()
     }.update(db).await;
@@ -411,7 +417,13 @@ async fn edit_user(
         } else {
             hashed_new_password.clone()
         }),
-        avatar: ActiveValue::set(user_edit_data.avatar.clone()),
+        avatar: ActiveValue::set(
+            if user_edit_data.avatar.clone().len() == 0 {
+                user[0].avatar.clone()
+            } else {
+                vec_i8_into_u8(user_edit_data.avatar.clone())
+            }
+        ),
         ..Default::default()
     }.update(db).await;
 
@@ -430,6 +442,16 @@ async fn edit_user(
         Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
 
+}
+
+fn vec_i8_into_u8(v: Vec<i8>) -> Vec<u8> {
+    let mut v = std::mem::ManuallyDrop::new(v);
+
+    let p = v.as_mut_ptr();
+    let len = v.len();
+    let cap = v.capacity();
+    
+    unsafe { Vec::from_raw_parts(p as *mut u8, len, cap) }
 }
 
 pub fn get_all_methods() -> Vec<rocket::Route> {

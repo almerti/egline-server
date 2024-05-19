@@ -219,7 +219,7 @@ async fn get_chapter_text(
 async fn get_chapter_audio(
     db: &State<DatabaseConnection>,
     chapter_id: i32
-) -> Result<Vec<u8>, status::Custom<String>> {
+) -> Result<String, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
     let chapter_data = Chapter::find()
         .filter(Column::Id.eq(chapter_id))
@@ -231,13 +231,18 @@ async fn get_chapter_audio(
         return Err(status::Custom(Status::NotFound, format!("No chapter with id {}", chapter_id)))
     }
 
-    let filepath = format!("storage{}/audio.mp3", chapter_data[0].filepath);
-    let mut file = File::options().read(true).open(filepath.clone()).expect("Can not open file");
-    let metadata = fs::metadata(filepath.clone()).await.expect("Can not read metadata");
-    let mut buf = vec![0; metadata.len() as usize];
-    let _ = file.read(&mut buf).expect("Buffer overflow");
+    let filepath = format!("storage{}/audio.txt", chapter_data[0].filepath);
+    let file = File::options().read(true).open(filepath);
 
-    Ok(buf)
+    match file {
+        Ok(mut result) => {
+            let mut content = String::new();
+            let _ = result.read_to_string(&mut content);
+
+            Ok(content)
+        },
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
 }
 
 pub fn get_all_chapter_methods() -> Vec<rocket::Route> {
