@@ -23,6 +23,15 @@ struct UserAuthModel {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+struct UserEditModel {
+    email: String,
+    display_name: String,
+    password: String,
+    new_password: String,
+    avatar: Vec<u8>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct UserWithoutPassword {
     id: i32,
     email: String,
@@ -105,7 +114,7 @@ async fn update_user(
     db: &State<DatabaseConnection>,
     user_data: Json<Model>,
     id: i32,
-) -> Result<Json<String>, status::Custom<String>> {
+) -> Result<Json<Model>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
     let user = User::find_by_id(id).one(db).await.unwrap().unwrap();
 
@@ -126,7 +135,7 @@ async fn update_user(
     }.update(db).await;
 
     match updated_user {
-        Ok(result) => Ok(Json(format!("User {} was successfully updated", result.display_name.clone()))),
+        Ok(result) => Ok(Json(result)),
         Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
 }
@@ -365,6 +374,64 @@ async fn login_user(
     }
 }
 
+#[post("/edit/<id>", data = "<user_edit_data>", format = "json")]
+async fn edit_user(
+    db: &State<DatabaseConnection>,
+    id: i32,
+    user_edit_data: Json<UserEditModel>
+) -> Result<Json<UserWithoutPassword>, status::Custom<String>> {
+    let db: &DatabaseConnection = db as &DatabaseConnection;
+
+    let user = User::find_by_id(id).all(db).await.unwrap();
+
+    if user.len() == 0 {
+        return Err(status::Custom(
+            Status::InternalServerError,
+            format!("No such user with id {}", id)
+        ))
+    }
+
+    let hashed_old_password = digest(user_edit_data.password.clone());
+    let hashed_new_password = digest(user_edit_data.new_password.clone());
+
+    if user[0].password.clone() != hashed_old_password.clone() && user_edit_data.password.clone().len() != 0 {
+        return Err(status::Custom(
+            Status::InternalServerError,
+            format!("Passwords missmatching")
+        ))
+    }
+
+    let updated_user = ActiveModel {
+        id: ActiveValue::set(id),
+        email: ActiveValue::set(user_edit_data.email.clone()),
+        display_name: ActiveValue::set(user_edit_data.display_name.clone()),
+        password: ActiveValue::set(
+        if user_edit_data.new_password.clone().len() == 0 {
+            user[0].password.clone()
+        } else {
+            hashed_new_password.clone()
+        }),
+        avatar: ActiveValue::set(user_edit_data.avatar.clone()),
+        ..Default::default()
+    }.update(db).await;
+
+    match updated_user {
+        Ok(result) => {
+            let user_wo_password = UserWithoutPassword {
+                id: result.id,
+                email: result.email,
+                display_name: result.display_name,
+                avatar: result.avatar,
+                saved_books: result.saved_books
+            };
+
+            Ok(Json(user_wo_password))
+        },
+        Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
+    }
+
+}
+
 pub fn get_all_methods() -> Vec<rocket::Route> {
     routes![
         get_all_users,
@@ -376,6 +443,7 @@ pub fn get_all_methods() -> Vec<rocket::Route> {
         delete_user_tab,
         add_book_to_tab,
         delete_book_from_tab,
-        login_user
+        login_user,
+        edit_user
     ]
 }
