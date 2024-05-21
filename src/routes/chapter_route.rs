@@ -189,7 +189,7 @@ async fn delete_chapter(
 async fn get_chapter_text(
     db: &State<DatabaseConnection>,
     chapter_id: i32
-) -> Result<String, status::Custom<String>> {
+) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
     let chapter_data = Chapter::find()
         .filter(Column::Id.eq(chapter_id))
@@ -209,7 +209,7 @@ async fn get_chapter_text(
             let mut content = String::new();
             let _ = result.read_to_string(&mut content);
 
-            Ok(content)
+            Ok(Json(content))
         },
         Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }
@@ -219,7 +219,7 @@ async fn get_chapter_text(
 async fn get_chapter_audio(
     db: &State<DatabaseConnection>,
     chapter_id: i32
-) -> Result<String, status::Custom<String>> {
+) -> Result<Json<String>, status::Custom<String>> {
     let db: &DatabaseConnection = db as &DatabaseConnection;
     let chapter_data = Chapter::find()
         .filter(Column::Id.eq(chapter_id))
@@ -239,7 +239,7 @@ async fn get_chapter_audio(
             let mut content = String::new();
             let _ = result.read_to_string(&mut content);
 
-            Ok(content)
+            Ok(Json(content))
         },
         Err(err) => Err(status::Custom(Status::InternalServerError, err.to_string()))
     }

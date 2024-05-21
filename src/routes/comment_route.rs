@@ -63,12 +63,12 @@ async fn create_comment(
         .await
         .unwrap();
     
-    if chapter.is_empty() {
-        return Err(status::Custom(
-            Status::InternalServerError,
-            format!("No such chapter with id {} and book_id {}", comment_data.chapter_id, comment_data.book_id)
-        ));
-    }
+    // if chapter.is_empty() {
+    //     return Err(status::Custom(
+    //         Status::InternalServerError,
+    //         format!("No such chapter with id {} and book_id {}", comment_data.chapter_id, comment_data.book_id)
+    //     ));
+    // }
     
     let comment:Result<Model, DbErr> = ActiveModel {
         book_id: ActiveValue::set(comment_data.book_id.clone()),
